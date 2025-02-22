@@ -123,7 +123,9 @@ exports.signup = async (req, res, next) => {
               <li>Crear grupos y comunidades en torno a tus intereses.</li>
             </ul>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="http://your-app-url.com" style="background-color: #00d9ff; color: #ffffff; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              <a href="${[
+                process.env.SERVER_HOST,
+              ]}" style="background-color: #00d9ff; color: #ffffff; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                 Explora ChatConnect
               </a>
             </div>
