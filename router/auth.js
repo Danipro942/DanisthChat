@@ -50,7 +50,6 @@ router.put(
 
 router.put(
   "/resetPassword",
-  isAuth,
 
   [body("email").isEmail().withMessage("Please enter a valid email address")],
   authController.resetPassword
