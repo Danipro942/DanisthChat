@@ -19,9 +19,7 @@ exports.searchUser = async (req, res, next) => {
   const findUser = await User.find({
     username: new RegExp(`^${search}`, "i"),
   }).select("username profilePicture -_id");
-  console.log(username);
   const removeUserSelf = findUser.filter((user) => user.username !== username);
-  console.log(removeUserSelf);
   res.status(200).json(removeUserSelf);
 };
 
@@ -90,8 +88,11 @@ exports.getChats = async (req, res, next) => {
   }
 
   const chats = await Chat.find({ users: { _id } })
-    .populate("users")
-    .select("username lastMessage ");
+    .populate({
+      path: "users",
+      select: "username profilePicture createdAt -_id",
+    })
+    .select("username lastMessage");
 
   res.status(200).json({
     chats,
@@ -100,11 +101,34 @@ exports.getChats = async (req, res, next) => {
 
 exports.sendMessage = async (req, res, next) => {
   const error = new Error();
-
   const { receipterUser, text } = req.body;
+  const { _id } = req.user;
+  let imgURL;
 
-  const { _id, username } = req.user;
-  console.log(_id);
+  // Check if the image size exceeds 20MB
+  const MAX_SIZE = 20 * 1024 * 1024; // 1MB in bytes
+
+  if (req.file) {
+    if (req.file.size > MAX_SIZE) {
+      error.statusCode = 413;
+      error.message = "Image size exceeds 20MB";
+      return next(error);
+    }
+    const fileStr = req.file.buffer.toString("base64");
+    const dataUri = `data:${req.file.mimetype};base64,${fileStr}`;
+    try {
+      const uploadResult = await cloudinary.uploader.upload(dataUri, {
+        folder: "message_images",
+      });
+      imgURL = uploadResult.secure_url;
+      console.log(imgURL);
+    } catch (err) {
+      console.log(err);
+      error.statusCode = 500;
+      error.message = "Error uploading image to Cloudinary";
+      return next(error);
+    }
+  }
   try {
     const findReceipter = await User.findOne({ username: receipterUser });
     if (!findReceipter) {
@@ -125,12 +149,16 @@ exports.sendMessage = async (req, res, next) => {
     console.log(findChat);
     const message = new Message({
       chatId: findChat._id,
+      imgURL: imgURL,
       sender: _id,
       text,
     });
-    await message.save();
+
+    console.log(message);
+    const saveMessage = await message.save();
     res.status(202).json({
       mesage: "Sucessfull",
+      saveMessage,
     });
   } catch (error) {
     console.log(error);
@@ -143,7 +171,6 @@ exports.getMessage = async (req, res, next) => {
   const perPage = 20;
   let totalItems;
   const currentPage = req.params.page || 1;
-  console.log(req.params.page, "current page");
 
   const { receipterUser } = req.params;
 
@@ -180,7 +207,6 @@ exports.getMessage = async (req, res, next) => {
       error.message = "Message not found";
       return next(error);
     }
-    console.log(messages, totalItems, hasMore);
     res.status(200).json({
       messages,
       totalItems,
@@ -201,6 +227,14 @@ exports.uploadProfileImage = async (req, res, next) => {
     return next(error);
   }
 
+  // Check if the image size exceeds 20MB
+  const MAX_SIZE = 20 * 1024 * 1024; // 1MB in bytes
+  if (req.file.size > MAX_SIZE) {
+    error.statusCode = 413;
+    error.message = "Image size exceeds 20MB";
+    return next(error);
+  }
+
   try {
     const fileStr = req.file.buffer.toString("base64");
     const dataUri = `data:${req.file.mimetype};base64,${fileStr}`;
@@ -213,7 +247,6 @@ exports.uploadProfileImage = async (req, res, next) => {
 
     // Get the URL of the uploaded image
     const imageUrl = uploadResult.secure_url;
-    console.log("Image Upload to Cloudinary:", imageUrl);
 
     const uploadedImage = await User.findOneAndUpdate(
       { username: req.user.username },

@@ -15,7 +15,12 @@ const fileFilter = (req, file, cb) => {
   ) {
     cb(null, true);
   } else {
-    cb(null, false);
+    cb(
+      new Error(
+        "Invalid file type. Only PNG, JPEG, and JPG files are allowed."
+      ),
+      false
+    );
   }
 };
 
@@ -61,7 +66,8 @@ router.put(
 );
 
 router.get("/chats", isAuth, UserController.getChats);
-router.put(
+
+router.post(
   "/message",
   isAuth,
   [
@@ -74,6 +80,7 @@ router.put(
       .isLength({ min: 1 })
       .withMessage("text must be at least 3 characters long"),
   ],
+  upload.single("image"),
   UserController.sendMessage
 );
 

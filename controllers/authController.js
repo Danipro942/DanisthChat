@@ -85,6 +85,7 @@ exports.signup = async (req, res, next) => {
       {
         username,
         email,
+        profilePicture: userCreated.profilePicture,
         _id: userCreated._id,
       },
       process.env.JWT_KEY,

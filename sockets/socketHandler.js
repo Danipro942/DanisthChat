@@ -3,6 +3,7 @@ const User = require("../models/user");
 
 module.exports = async (io) => {
   io.on("connection", (socket) => {
+    console.log("Socket On");
     socket.on("login", (username) => {
       socket.username = username;
 
@@ -10,10 +11,12 @@ module.exports = async (io) => {
       console.log(`User ${username} with ID ${socket.id} connected`);
     });
 
-    socket.on("private_message", async ({ to, message, sender }) => {
-      console.log("Message Reveived: ", message, to);
+    socket.on("private_message", async ({ to, message, sender, imgURL }) => {
+      console.log("Message Reveived: ", message, to, imgURL);
+      console.log("siuuu");
 
-      if (to) io.to(to).emit("messageReveived", { text: message, sender });
+      if (to)
+        io.to(to).emit("messageReveived", { text: message, sender, imgURL });
       try {
         const findUser = await User.findOne({ username: to });
         const findSender = await User.findOne({ username: sender });
@@ -28,7 +31,6 @@ module.exports = async (io) => {
           io.to(to)
             .to(sender)
             .emit("lastMessage", { message, _id: findChat._id });
-        console.log("lastMessage");
       } catch (error) {
         console.log(error);
       }

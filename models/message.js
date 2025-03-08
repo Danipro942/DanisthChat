@@ -15,6 +15,11 @@ const MessageSchema = new Schema(
       ref: "User",
     },
 
+    imgURL: {
+      type: String,
+      required: false,
+    },
+
     text: {
       type: String,
       required: true,
