@@ -27,6 +27,8 @@ const io = new Server(server, {
   },
 });
 
+// Initialize socket.io with the server
+
 socketHandler(io);
 
 // Ensure the images directory exists
